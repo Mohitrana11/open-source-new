@@ -1,20 +1,10 @@
-import express from "express";
+import app from "./app.js";
 import dotenv from "dotenv";
-import cors from "cors";
 import connectDB from "./config/db.js";
-dotenv.config({ path: "./config/.env" });
-
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-connectDB();
 
 const PORT = process.env.PORT || 5000;
-
-app.get("/", (req, res) => {
-  res.send("Hello World!");
-});
+dotenv.config({ path: "./config/.env" });
+connectDB();
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
