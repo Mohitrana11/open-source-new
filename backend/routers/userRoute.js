@@ -15,7 +15,7 @@ router.post("/register", register);
 // User login route
 router.post("/login", login);
 
-// // User logout route
+// // User logout routeQ
 router.post("/logout", logout);
 
 // // Get user details route
