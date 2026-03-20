@@ -7,6 +7,7 @@ import cors from "cors";
 import errorMiddleware from "./middlewares/error.js";
 import userRoute from "./routers/userRoute.js";
 import productRoute from "./routers/productRouter.js";
+import orderRouter from "./routers/orderRouter.js";
 
 const app = express();
 app.use(cors());
@@ -20,6 +21,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/v1/users", userRoute);
 app.use("/api/v1", productRoute);
+app.use("/api/v1", orderRouter);
 
 app.use(errorMiddleware);
 
