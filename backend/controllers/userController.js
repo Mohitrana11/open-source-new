@@ -17,8 +17,8 @@ export const register = catchAsync(async (req, res, next) => {
   });
 
   const token = user.getJWTToken();
-  user.password = undefined;
   res.cookie("token", token, cookieOptions);
+  user.password = undefined;
   sendResponse(res, 201, "User registered successfully!", { user });
 });
 
@@ -37,24 +37,21 @@ export const login = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler("Wrong email or password!", 400));
   }
 
-  const userSafe = await User.findById(user._id).select("-password");
   const token = user.getJWTToken();
-  res.cookie("token", token, cookieOptions);
+  res.cookie("token", token);
+  user.password = undefined;
   sendResponse(res, 200, "Login successful!", {
-    user: userSafe,
+    user,
     token,
   });
 });
 
 // [logout]
 export const logout = catchAsync(async (req, res) => {
-  res.cookie("token", null, {
-    expires: new Date(Date.now()),
-    httpOnly: true,
-  });
+  res.clearCookie("token", cookieOptions);
+
   sendResponse(res, 200, "Logout Successful!");
 });
-
 // [get user Details]
 export const getUserDetails = catchAsync(async (req, res, next) => {
   const id = req.params.id;
