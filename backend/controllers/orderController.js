@@ -3,7 +3,7 @@ import Product from "../models/productModel.js";
 import catchAsync from "../middlewares/catchAsyncError.js";
 import ErrorHandler from "../utils/errorHandler.js";
 import sendResponse from "../utils/sendTokenResponse.js";
-
+import { cache } from "../utils/cache.js";
 export const reduceStock = async (orderItems = [], session) => {
   if (!Array.isArray(orderItems) || orderItems.length === 0) return;
 
@@ -89,7 +89,22 @@ const myOrders = catchAsync(async (req, res, next) => {
 });
 
 // [All Orders]
-const allOrders = catchAsync(async (req, res, next) => {
+let allOrders;
+if (cache.has("all_orders")) {
+  allOrders = catchAsync(async (req, res, next) => {
+    const orders = JSON.parse(cache.get("all_orders"));
+    return sendResponse(res, 200, "All orders fetched", { orders });
+  });
+} else {
+  allOrders = catchAsync(async (req, res, next) => {
+    const orders = await Order.find()
+      .populate("user", "username email")
+      .sort({ createdAt: -1 });
+    cache.set("all_orders", JSON.stringify(orders));
+    return sendResponse(res, 200, "All orders fetched", { orders });
+  });
+}
+allOrders = catchAsync(async (req, res, next) => {
   const orders = await Order.find()
     .populate("user", "username email")
     .sort({ createdAt: -1 });

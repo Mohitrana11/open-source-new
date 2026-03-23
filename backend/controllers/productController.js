@@ -1,9 +1,8 @@
 import Product from "../models/productModel.js";
 import ErrorHandler from "../utils/errorHandler.js";
 import catchAsync from "../middlewares/catchAsyncError.js";
-
 import sendResponse from "../utils/sendTokenResponse.js";
-
+import { cache } from "../utils/cache.js";
 const normalizePhotos = (input) => {
   if (!input) return [];
   if (Array.isArray(input)) return input;
@@ -63,13 +62,27 @@ const getLatestProduct = catchAsync(async (req, res) => {
 
 //[Get all categories]
 const getCategoryProduct = catchAsync(async (req, res) => {
-  const categories = await Product.distinct("category");
+  let categories;
+  if (cache.has("categories")) {
+    categories = JSON.parse(cache.get("categories"));
+  } else {
+    categories = await Product.distinct("category");
+    cache.set("categories", JSON.stringify(categories));
+  }
+  await Product.distinct("category");
   return sendResponse(res, 200, "Categories fetched", { categories });
 });
 
 //[Get all products for admin]
 const getAdminProduct = catchAsync(async (req, res) => {
-  const products = await Product.find({}).sort({ createdAt: -1 });
+  let products;
+
+  if (cache.has("admin_products")) {
+    products = JSON.parse(cache.get("admin_products"));
+  } else {
+    products = await Product.find({}).sort({ createdAt: -1 });
+    cache.set("admin_products", JSON.stringify(products));
+  }
   return sendResponse(res, 200, "All products for admin", {
     productCount: products.length,
     products,
@@ -82,7 +95,13 @@ const getSingleProduct = catchAsync(async (req, res, next) => {
   console.log("Fetching product with id:", id);
   if (!id) return next(new ErrorHandler("Product id is required", 400));
 
-  const product = await Product.findById(id);
+  let product;
+  if (cache.has(`product_${id}`)) {
+    product = JSON.parse(cache.get(`product_${id}`));
+  } else {
+    product = await Product.findById(id);
+    cache.set(`product_${id}`, JSON.stringify(product));
+  }
   if (!product) return next(new ErrorHandler("Product not found", 404));
 
   return sendResponse(res, 200, "Product fetched", { product });
