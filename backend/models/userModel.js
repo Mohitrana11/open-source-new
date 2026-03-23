@@ -42,6 +42,12 @@ const userSchema = new mongoose.Schema(
       type: Date,
       required: [true, "Please provide your Date of Birth"],
     },
+    verifyToken: String,
+    verifyTokenExpiry: Date,
+    forgotPasswordToken: String,
+    forgotPasswordTokenExpiry: Date,
+    resetPasswordToken: String,
+    resetPasswordExpire: Date,
   },
   {
     timestamps: true,

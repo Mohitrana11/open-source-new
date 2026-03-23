@@ -19,9 +19,9 @@ router.post("/login", login);
 router.post("/logout", logout);
 
 // // Get user details route
-router.get("/me", isAuthenticated, getUserDetails);
+router.get("/me/:id", isAuthenticated, getUserDetails);
 
 // // Get all users details route (admin only)
-router.get("/users", isAdmin, usersDetails);
+router.get("/all", isAuthenticated, isAdmin, usersDetails);
 
 export default router;
