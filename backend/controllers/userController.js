@@ -6,21 +6,27 @@ import sendResponse from "../utils/sendTokenResponse.js";
 import cookieOptions from "../constant/cookieOptions.js";
 import sendEmail from "../utils/sendEmail.js";
 import { cache } from "../utils/cache.js";
+
 // [Register User]
 export const register = catchAsync(async (req, res, next) => {
-  const { username, email, password, photo, gender, dob } = req.body;
+  const { username, email, password, gender, dob } = req.body;
+  console.log(req.body);
+  console.log(req.file);
+  if (!req.file) {
+    return next(new ErrorHandler("Profile photo is required", 400));
+  }
   const user = await User.create({
     username,
     email,
     password,
-    photo,
-    gender,
+    photo: req.file ? req.file.path : undefined,
     dob,
+    gender,
   });
 
   const token = user.getJWTToken();
   res.cookie("token", token, cookieOptions);
-  await sendEmail({ email, emailType: "VERIFY", userId: user._id });
+  // await sendEmail({ email, emailType: "VERIFY", userId: user._id });
   user.password = undefined;
   sendResponse(res, 201, "User registered successfully!", { user });
 });
@@ -43,7 +49,7 @@ export const login = catchAsync(async (req, res, next) => {
   const token = user.getJWTToken();
   res.cookie("token", token);
   user.password = undefined;
-  // await sendEmail({ email, emailType: "VERIFY", userId: user._id });
+  await sendEmail({ email, emailType: "VERIFY", userId: user._id });
   sendResponse(res, 200, "Login successful!", {
     user,
     token,
@@ -94,9 +100,32 @@ export const usersDetails = catchAsync(async (req, res) => {
       .lean();
     cache.set("all_users", JSON.stringify(users), 3600); // Cache for 1 hour
   }
-
   sendResponse(res, 200, "All user details fetched successfully!", {
     users,
+  });
+});
+
+// [Update user details]
+export const updateUserDetails = catchAsync(async (req, res, next) => {
+  const id = req.params.id;
+  if (!id) return next(new ErrorHandler("User id required", 400));
+  if (req.user?._id.toString() !== id) {
+    return next(new ErrorHandler("Access denied", 403));
+  }
+  const { username, email, photo, gender, dob } = req.body;
+  const updatedData = { username, email, photo, gender, dob };
+
+  const user = await User.findByIdAndUpdate(id, updatedData).select(
+    "-password",
+  );
+
+  if (!user) return next(new ErrorHandler("User not found", 404));
+
+  cache.del(`user_${id}`);
+  cache.del("all_users");
+
+  sendResponse(res, 200, "User details updated successfully!", {
+    user,
   });
 });
 
@@ -122,14 +151,8 @@ export const requestPasswordReset = catchAsync(async (req, res, next) => {
   user.forgotPasswordTokenExpiry = Date.now() + 60 * 60 * 1000;
 
   await user.save({ validateBeforeSave: false });
-
-  // send plain resetToken in email (so link contains it)
   await sendEmail({ email, emailType: "RESET", userId: user._id, resetToken });
-
-  res.status(200).json({
-    success: true,
-    message: "Password reset email sent!",
-  });
+  sendResponse(res, 200, "Password reset link sent to email!");
 });
 
 // [reset password]
@@ -157,8 +180,7 @@ export const resetPassword = catchAsync(async (req, res, next) => {
   user.forgotPasswordTokenExpiry = undefined;
   await user.save();
 
-  res.status(200).json({
-    success: true,
-    message: "Password reset successfully!",
+  sendResponse(res, 200, "Password reset successful!", {
+    user,
   });
 });

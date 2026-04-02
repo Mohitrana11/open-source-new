@@ -1,2 +1,2 @@
 import nodeCache from "node-cache";
-export const cache = new nodeCache();
+export const cache = new nodeCache({ stdTTL: 60 });
